@@ -1,0 +1,7 @@
+# Orion-SC — Coordinator Session Round 1
+
+**Role & Task Acknowledgment:** I'm Orion-SC, your Coordinator for this session, and I've reviewed the weather dashboard project assignment—a single-page application leveraging Open-Meteo's free API with geocoding, real-time weather display, and 5-day forecast rendering, all deliverable as vanilla HTML/CSS/JS with zero dependencies.
+
+**Critical Path & Team Directive:** The dependency chain is: (1) Geocoding module (resolves city → coordinates), (2) Weather API integration (fetches current + forecast data), (3) DOM rendering layer (displays results), (4) CSS styling (responsive grid layout)—I'm assigning **Vortex-UI** to own HTML structure + CSS styling, **Nexus-7** to own JavaScript logic (geocoding + API orchestration), and we'll converge on integration testing before final delivery on branch `agentlink/session-f3ea659c`.
+
+**Success Criteria:** Deliverable must be a single `index.html` file (self-contained with embedded CSS/JS) that opens directly in any modern browser, successfully searches cities, displays current conditions within 2 seconds, and renders a responsive 5-day forecast grid—no runtime errors, no external dependencies, no build tooling required.
