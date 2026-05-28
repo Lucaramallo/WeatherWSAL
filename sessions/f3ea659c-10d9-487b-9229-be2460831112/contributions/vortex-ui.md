@@ -1,10 +1,26 @@
-# Vortex-UI — Contributor Analysis (Round 1)
+# Vortex-UI — Contributor Round 2 Response
 
-**Accessibility-First Structure Assessment:**
-The semantic HTML foundation must prioritize ARIA landmarks (main, search region), form semantics (label-input pairing with `for`/`id`), and live regions (`aria-live="polite"`) for async weather updates—this ensures screen reader users receive real-time feedback when search results load and forecast data refreshes. WCAG 2.1 AA compliance demands color contrast ≥4.5:1 for text, keyboard navigation for all interactive elements, and skip links to bypass the search input on repeat visits.
+**Agreement with Orion-SC's Accessibility Critique (Partial Accept):**
+I concede the skeleton loader scope creep; a **text-based "Loading..." label with `aria-live="polite"`** meets WCAG 2.1 AA at lower implementation cost—I'll embed this in the current weather card as a single DOM state toggle rather than animated CSS. However, I **partially reject** the disambiguation dropdown removal: Open-Meteo's geocoding does return multiple candidates (Paris, France vs. Paris, Texas), and relying solely on "first match" violates user mental models when someone explicitly searches "Paris, Texas" but gets Paris, France first; **I propose a minimal compromise: single-line confidence label ("Paris, France — Population: 2.2M") below the search input with *keyboard-accessible arrow keys* to cycle through top 3 candidates** (not a dropdown, just inline list), preserving accessibility while preventing silent mismatches that destroy trust.
 
-**Responsive Layout & Visual Hierarchy:**
-A mobile-first CSS Grid approach (320px → 768px → 1440px breakpoints) with flexbox fallback guarantees the search card stays full-width on mobile, current weather card expands to sidebar on tablet, and the 5-day forecast transitions from single-column (stacked cards) → 2-column grid (tablet) → 5-column grid (desktop)—this reflow pattern prevents horizontal scroll and maintains readable typography (16px base, 1.5 line-height) across all viewports. Semantic color usage (blue for cool temps, red/orange for heat) with pattern fills ensures functionality for colorblind users.
+**Strong Agreement with Orion-SC's API Schema Correction:**
+Nexus-7's WMO codec complexity is genuinely unnecessary—Open-Meteo returns **`weather_code` + human-readable descriptions in `weather_description`** fields, eliminating the 100+ line lookup table. This is critical: I now understand the weather service will output `{current: {temp, humidity, wind_speed, description}, daily: [{date, temp_max, temp_min, description}, ...]}` directly from the API without transformation overhead. **I accept this reduces JavaScript burden to ~40 lines of parsing vs. 150+ lines of codec logic.**
 
-**Production Constraints & Edge Cases:**
-Open-Meteo's geocoding endpoint handles fuzzy matching and returns multiple candidate locations; we must render a disambiguation dropdown for ambiguous city names (e.g., "Springfield"). The API response latency (typically 200–500ms) demands skeleton loaders or spinner states to prevent jank and communicate loading state accessibly—no hidden spinners, explicit `role="status"` announcements. Error handling must surface API failures, invalid coordinates, and network timeouts with user-facing, accessible error messages rather than console dumps.
+**Challenge to Nexus-7 (Unresolved):**
+The proposal to "wire search input (debounced 300ms) → geocoding → weather fetch" assumes sequential execution, but **debounce timing must account for geocoding latency**—if geocoding takes 400ms and debounce is 300ms, we fire a weather request with stale coordinates. **I demand Nexus-7 clarify: does the weather fetch only trigger after geocoding completes (promise chain), or do we add a "Confirm location" button to eliminate race conditions?** For a production dashboard, async state management here is the highest-risk surface for UX bugs.
+
+**Refinement to My HTML/CSS Deliverable:**
+Based on Orion-SC's feedback, I'm **removing animated skeleton loaders** and replacing with: (1) static `<section aria-live="polite" aria-label="Current weather status">` that toggles between "Loading..." and content, (2) responsive CSS Grid for forecast: `grid-template-columns: repeat(auto-fit, minmax(140px, 1fr))` (automatically reflows from 1→5 columns without media queries), (3) form accessibility: `<label for="city-input">Search city</label> <input id="city-input" type="search" />` with `aria-describedby="location-hint"` pointing to confidence label, (4) **keyboard navigation: Tab order preserves search → forecast cards → error message**, no trap focus required for single-page context.
+
+**Production Risk I'm Escalating:**
+The responsive grid approach assumes modern CSS Grid support (IE 11 incompatible, but acceptable for 2024 open-source project). **More critical: color contrast on weather condition text.** If we display descriptions like "Light Rain" over a background color coded by temperature (blue for cold), we risk failing WCAG if background is dark blue + dark gray text. **I'm proposing: all weather text uses black (light mode) / white (dark mode) with semantic color indicators as *icons or borders* only, never as text color alone.** This prevents colorblind failures and ensures 7:1 contrast minimum.
+
+---
+
+**Consensus Checkpoint for Nexus-7:**
+- ✅ Accept: Single consolidated API call, no WMO codec, use `weather_description` field directly
+- ✅ Accept: Geocoding caching by city name, O(1) lookup post-fetch
+- ❌ Challenge: Clarify debounce + async race condition handling before implementation
+- ❌ Challenge: Confirm Open-Meteo daily forecast field names (`temperature_2m_max` vs. `max_temperature`?) before parsing logic
+
+**Ready for Integration:** HTML structure + CSS Grid delivered; awaiting Nexus-7's JavaScript module signatures and Orion-SC's API schema validation before final assembly on `agentlink/session-f3ea659c`.
