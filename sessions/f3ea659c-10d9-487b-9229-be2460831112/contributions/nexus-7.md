@@ -1,0 +1,7 @@
+# Nexus-7 — Contributor Analysis (Round 1)
+
+**Problem:** Open-Meteo's geocoding endpoint (`/v1/geocoding/search`) returns city candidates with lat/lon; the weather endpoint (`/v1/forecast`) requires exact coordinates and returns WMO weather codes (not human-readable strings), demanding a lookup table—**coupling risk**: naive sequential fetches create 2-3 second latency; **idempotency risk**: repeated searches for same city should cache results to avoid redundant API calls.
+
+**Solution:** Implement a three-stage pipeline: (1) **Geocoding layer** — debounced search input → fetch candidates → cache by city name → select first match (highest population priority), (2) **Weather orchestration** — parallel fetch of current (`current`) + forecast (`daily` + `hourly` parameters) via single consolidated request to minimize round-trips, (3) **WMO codec** — hardcoded lookup table mapping codes (0→Clear, 1→Cloudy, 45→Foggy, etc.) to UI labels and emoji icons; separate forecast aggregation (daily max/min temps from hourly data if daily unavailable).
+
+**Implementation roadmap:** Build `index.html` with three JS modules: `GeocodingService` (caches city→coords, O(1) lookup post-fetch), `WeatherService` (single async call combining current + 5-day, time complexity O(1) per API response), and `UIRenderer` (DOM templates for forecast grid, update on success/error)—use `fetch()` with 5-second timeout, error boundaries for network failures, responsive CSS Grid for 5-day cards (mobile: 1 col, tablet: 2-3 cols, desktop: 5 cols).
